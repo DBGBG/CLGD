@@ -220,7 +220,7 @@ const handleAcknowledgeAll = async () => {
   }
 }
 
-// 删除报警（前端删除，不调用后端）
+// 删除报警（调用后端API）
 const handleDelete = async (row: AlarmItem) => {
   try {
     await ElMessageBox.confirm(
@@ -228,29 +228,41 @@ const handleDelete = async (row: AlarmItem) => {
       '删除确认',
       { confirmButtonText: '删除', cancelButtonText: '取消', type: 'error' }
     )
-    const index = alarmData.value.findIndex((item) => item.id === row.id)
-    if (index > -1) {
-      alarmData.value.splice(index, 1)
-      total.value = alarmData.value.length
-      ElMessage.success('报警已删除')
-    }
+    await axios.delete(`/api/alarms/${row.id}`)
+    ElMessage.success('报警已删除')
+    // 刷新列表
+    await fetchAlarms()
   } catch (error: any) {
     if (error !== 'cancel') {
       console.error('删除报警失败:', error)
+      ElMessage.error('删除报警失败')
     }
   }
 }
 
-// 清空已确认的报警（前端过滤）
-const handleClearAll = () => {
+// 清空已确认的报警（调用后端API）
+const handleClearAll = async () => {
   const confirmedCount = alarmData.value.filter((item) => item.status === 'confirmed').length
   if (confirmedCount === 0) {
     ElMessage.warning('没有已确认的报警需要清空')
     return
   }
-  alarmData.value = alarmData.value.filter((item) => item.status !== 'confirmed')
-  total.value = alarmData.value.length
-  ElMessage.success(`已清空 ${confirmedCount} 条已确认的报警`)
+  try {
+    await ElMessageBox.confirm(
+      `确定清空全部 ${confirmedCount} 条已确认的报警？`,
+      '清空确认',
+      { confirmButtonText: '清空', cancelButtonText: '取消', type: 'warning' }
+    )
+    await axios.delete('/api/alarms/clear-confirmed')
+    ElMessage.success(`已清空 ${confirmedCount} 条已确认的报警`)
+    // 刷新列表
+    await fetchAlarms()
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      console.error('清空已确认报警失败:', error)
+      ElMessage.error('清空已确认报警失败')
+    }
+  }
 }
 
 onMounted(() => {

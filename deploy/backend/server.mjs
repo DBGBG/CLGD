@@ -541,6 +541,48 @@ app.post('/api/alarms/acknowledge-all', async (req, res) => {
   }
 })
 
+// API: 删除单条报警
+app.delete('/api/alarms/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    const connection = await pool.getConnection()
+    try {
+      const [result] = await connection.execute(
+        `DELETE FROM roller_alerts WHERE id = ?`,
+        [id]
+      )
+      if (result.affectedRows > 0) {
+        res.json({ code: 0, message: '删除成功', data: { id } })
+      } else {
+        res.status(404).json({ code: 404, message: '报警记录不存在', data: null })
+      }
+    } finally {
+      connection.release()
+    }
+  } catch (error) {
+    console.error('删除报警失败:', error.message)
+    res.status(500).json({ code: 500, message: error.message, data: null })
+  }
+})
+
+// API: 清空已确认报警
+app.delete('/api/alarms/clear-confirmed', async (req, res) => {
+  try {
+    const connection = await pool.getConnection()
+    try {
+      const [result] = await connection.execute(
+        `DELETE FROM roller_alerts WHERE status = 'confirmed'`
+      )
+      res.json({ code: 0, message: '清空已确认报警成功', data: { affectedRows: result.affectedRows } })
+    } finally {
+      connection.release()
+    }
+  } catch (error) {
+    console.error('清空已确认报警失败:', error.message)
+    res.status(500).json({ code: 500, message: error.message, data: null })
+  }
+})
+
 // API: 获取历史数据（从数据库读取指定点位的历史记录）
 app.get('/api/history', async (req, res) => {
   try {
