@@ -569,28 +569,35 @@ def full_detection(df, instance_name, speed_avg=None, group_avg_values=None):
 
     # 9. 跳闸报警（基于组内平均值 + 分级告警）
     if group_avg_values is not None and len(group_avg_values) == len(current_values):
-        # 新规则：组内平均 > 3.0A 且 该辊子 < 0.7A，持续3秒
-        i = 0
-        while i < len(current_values):
-            if (group_avg_values[i] > CONFIG['trip_group_avg_threshold'] and
-                current_values[i] < CONFIG['trip_self_threshold']):
-                j = i
-                while (j < len(current_values) and
-                       group_avg_values[j] > CONFIG['trip_group_avg_threshold'] and
-                       current_values[j] < CONFIG['trip_self_threshold']):
-                    j += 1
-                duration = j - i
-                if duration >= CONFIG['trip_min_duration']:
-                    alert_type = '严重跳闸报警' if duration >= CONFIG['zero_severe_duration'] else '跳闸报警'
-                    detection_results.append({
-                        'start_idx': i, 'end_idx': j - 1,
-                        'start_time': time_index[i], 'end_time': time_index[j - 1],
-                        'duration': (time_index[j - 1] - time_index[i]).total_seconds(),
-                        'alert_type': alert_type,
-                    })
-                i = j
-            else:
-                i += 1
+        # 新增停机过滤：如果组平均电流整体过低，判定为停机状态，跳过跳闸报警
+        overall_group_avg = np.mean(group_avg_values)
+        if overall_group_avg < CONFIG['stop_state_current']:
+            logger.info(f'{instance_name} 组平均电流 {overall_group_avg:.2f}A < {CONFIG["stop_state_current"]}A，判定为停机状态，跳过跳闸报警')
+            # 跳过跳闸报警逻辑，但仍保留其他类型报警
+            pass
+        else:
+            # 新规则：组内平均 > 3.0A 且 该辊子 < 0.7A，持续3秒
+            i = 0
+            while i < len(current_values):
+                if (group_avg_values[i] > CONFIG['trip_group_avg_threshold'] and
+                    current_values[i] < CONFIG['trip_self_threshold']):
+                    j = i
+                    while (j < len(current_values) and
+                           group_avg_values[j] > CONFIG['trip_group_avg_threshold'] and
+                           current_values[j] < CONFIG['trip_self_threshold']):
+                        j += 1
+                    duration = j - i
+                    if duration >= CONFIG['trip_min_duration']:
+                        alert_type = '严重跳闸报警' if duration >= CONFIG['zero_severe_duration'] else '跳闸报警'
+                        detection_results.append({
+                            'start_idx': i, 'end_idx': j - 1,
+                            'start_time': time_index[i], 'end_time': time_index[j - 1],
+                            'duration': (time_index[j - 1] - time_index[i]).total_seconds(),
+                            'alert_type': alert_type,
+                        })
+                    i = j
+                else:
+                    i += 1
     else:
         # 旧规则：仅基于单辊电流
         i = 0
