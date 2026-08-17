@@ -457,7 +457,7 @@ app.get('/api/alarms', async (req, res) => {
     try {
       let query = `SELECT id, instance_name, alert_type, alert_time, start_time, end_time, duration, description, status
          FROM roller_alerts
-         WHERE 1=1`
+         WHERE duration >= 3`
       const params = []
       
       // 按状态筛选
