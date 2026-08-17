@@ -1,0 +1,15 @@
+{
+  "name": "esp-roller-backend",
+  "version": "1.0.0",
+  "description": "ESP层冷辊道数据API服务",
+  "type": "module",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs",
+    "server": "node server.mjs"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  }
+}

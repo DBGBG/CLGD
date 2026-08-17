@@ -1,0 +1,19 @@
+[Unit]
+Description=ESP Layer Cooling Backend Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/esp-layer-cooling/backend
+ExecStart=/usr/bin/java -Xms512m -Xmx2g -jar /opt/esp-layer-cooling/backend/esp-layer-cooling-1.0.0.jar --spring.profiles.active=prod
+ExecStop=/bin/kill -SIGTERM $MAINPID
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=esp-backend
+
+[Install]
+WantedBy=multi-user.target
